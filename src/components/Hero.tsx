@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/hero-gaming.jpg';
 import { useFlag } from '@/contexts/LaunchDarklyContext';
+import { trackEvent } from '@/lib/launchdarkly';
 
 interface HeroSlide {
   id: string;
@@ -19,10 +20,19 @@ const Hero: React.FC = () => {
   const vipVariant = useFlag('vip-gaming-experience', 'none');
   const isVIP = vipVariant === 'vip';
 
+  // AB test variant
+  const uiVariant = useFlag('ui.variant', 'control');
+
   // Optional string overrides from LaunchDarkly
   const heroTitleOverride = useFlag('copy.heroTitle', '');
   const heroSubtitleOverride = useFlag('copy.heroSubtitle', '');
   const heroPrimaryCtaOverride = useFlag('copy.heroPrimaryCta', '');
+
+  // Fire an exposure event once when the variant is determined
+  useEffect(() => {
+    trackEvent('hero_exposure', { variant: uiVariant, vip: isVIP });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiVariant]);
 
   // Regular hero content
   const regularSlides: HeroSlide[] = [
@@ -79,6 +89,9 @@ const Hero: React.FC = () => {
   };
 
   const handleCTAClick = () => {
+    // Send click event with A/B variant
+    trackEvent('hero_cta_click', { variant: uiVariant, vip: isVIP });
+
     if (isVIP) {
       console.log('VIP CTA clicked');
     } else {
@@ -96,6 +109,11 @@ const Hero: React.FC = () => {
   const displayTitle = heroTitleOverride || currentSlideData.title;
   const displaySubtitle = heroSubtitleOverride || currentSlideData.subtitle;
   const displayPrimaryCta = heroPrimaryCtaOverride || (isVIP ? 'Explore VIP Features' : 'Learn more');
+
+  // Variant-based CTA styling (A/B test)
+  const ctaClassName = `bg-gaming-gold hover:bg-gaming-gold/90 text-primary-foreground font-semibold px-8 py-4 text-lg ${
+    uiVariant === 'bold' ? 'text-xl py-5 shadow-lg' : ''
+  }`;
 
   return (
     <section 
@@ -135,7 +153,7 @@ const Hero: React.FC = () => {
               <Button 
                 onClick={handleCTAClick}
                 size="lg"
-                className="bg-gaming-gold hover:bg-gaming-gold/90 text-primary-foreground font-semibold px-8 py-4 text-lg"
+                className={ctaClassName}
               >
                 {displayPrimaryCta}
               </Button>
