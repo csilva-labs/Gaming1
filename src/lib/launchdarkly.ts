@@ -29,7 +29,10 @@ class LaunchDarklyService {
     }
 
     try {
-      this.client = LDClient.initialize(clientSideID, user);
+      this.client = LDClient.initialize(clientSideID, user, {
+        evaluationReasons: true,
+        application: { id: 'gaming1-demo', version: '1.0.0' },
+      });
       await this.client.waitForInitialization(5);
       this.initialized = true;
       return this.client;
