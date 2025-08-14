@@ -21,6 +21,16 @@ export interface GameFlags {
   
   // RNG seeding for deterministic demos
   'rng.seedFromFlag': string;
+
+  // Market targeting flags (country-based differences)
+  'market.showResponsibleGamingBanner': boolean;
+  'market.responsibleGamingMessage': string;
+  'market.responsibleGamingLinkUrl': string;
+
+  // String copy overrides
+  'copy.heroTitle': string;
+  'copy.heroSubtitle': string;
+  'copy.heroPrimaryCta': string;
 }
 
 export type FlagKey = keyof GameFlags;
@@ -35,7 +45,13 @@ export const DEFAULT_FLAGS: GameFlags = {
   'features.dailyBonus': true,
   'features.confettiOnWin': true,
   'copy.spinCta': 'Spin Now',
-  'rng.seedFromFlag': ''
+  'rng.seedFromFlag': '',
+  'market.showResponsibleGamingBanner': true,
+  'market.responsibleGamingMessage': 'We are committed to promoting safe and responsible gaming practices.',
+  'market.responsibleGamingLinkUrl': 'https://www.begambleaware.org/',
+  'copy.heroTitle': '',
+  'copy.heroSubtitle': '',
+  'copy.heroPrimaryCta': ''
 };
 
 // LaunchDarkly user context attributes

@@ -3,12 +3,18 @@ import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { VIPExperience } from '@/components/VIPExperience';
-import { getVIPStatus, createVIPUserContext, createRegularUserContext } from '@/lib/shared-context';
+import { createVIPUserContext, createRegularUserContext, setUserCountry, getCurrentUserContext } from '@/lib/shared-context';
 import navData from '@/data/nav.json';
+import { useFlag } from '@/contexts/LaunchDarklyContext';
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const currentVIPStatus = getVIPStatus();
+  const vipVariant = useFlag('vip-gaming-experience', 'none');
+  const currentVIPStatus = vipVariant;
+  const [country, setCountryState] = useState<'GB' | 'BE'>(() => {
+    const ctx = getCurrentUserContext();
+    return (ctx?.country === 'BE' ? 'BE' : 'GB');
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,6 +39,11 @@ const Header: React.FC = () => {
     createRegularUserContext();
     console.log('Regular context created, reloading page...');
     window.location.reload();
+  };
+
+  const handleCountryChange = (next: 'GB' | 'BE') => {
+    setCountryState(next);
+    setUserCountry(next);
   };
 
   const headerClasses = `
@@ -88,6 +99,17 @@ const Header: React.FC = () => {
                 </Button>
               )}
               
+              {/* Country Targeting Toggle */}
+              <select 
+                className="bg-transparent border border-gaming-navy-lighter rounded px-2 py-1 text-sm text-foreground"
+                value={country}
+                onChange={(e) => handleCountryChange(e.target.value as 'GB' | 'BE')}
+                title="Market"
+              >
+                <option value="GB">UK</option>
+                <option value="BE">Belgium</option>
+              </select>
+
               {/* Language Toggle */}
               <select 
                 className="bg-transparent border border-gaming-navy-lighter rounded px-2 py-1 text-sm text-foreground"
@@ -140,6 +162,19 @@ const Header: React.FC = () => {
                         👑 VIP Sign Up
                       </Button>
                     )}
+                  </div>
+                  
+                  {/* Mobile Country Selector */}
+                  <div className="pt-4 border-t border-gaming-navy-lighter">
+                    <select 
+                      className="bg-gaming-navy-light border border-gaming-navy-lighter rounded px-3 py-2 text-foreground w-full"
+                      value={country}
+                      onChange={(e) => handleCountryChange(e.target.value as 'GB' | 'BE')}
+                      title="Market"
+                    >
+                      <option value="GB">United Kingdom</option>
+                      <option value="BE">Belgium</option>
+                    </select>
                   </div>
                   
                   <div className="pt-4 border-t border-gaming-navy-lighter">

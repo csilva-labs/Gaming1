@@ -106,11 +106,17 @@ class LaunchDarklyService {
 
 export const ldService = new LaunchDarklyService();
 
-// Simplified tracking helpers
-export const trackEvent = (eventKey: string, metricValue?: number) => {
+// Tracking helper supporting optional data and metric value
+export const trackEvent = (eventKey: string, dataOrMetric?: any, metricValueOptional?: number) => {
   const client = ldService.getClient();
-  if (client) {
-    client.track(eventKey, undefined, metricValue);
+  if (!client) return;
+
+  // Backward compatibility: if second argument is a number and no third provided, treat it as metricValue
+  if (typeof dataOrMetric === 'number' && metricValueOptional === undefined) {
+    client.track(eventKey, undefined, dataOrMetric as number);
+    return;
   }
+
+  client.track(eventKey, dataOrMetric, metricValueOptional);
 };
 

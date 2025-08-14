@@ -1,14 +1,16 @@
 import React from 'react';
 import { Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
+import { useFlag } from '@/contexts/LaunchDarklyContext';
 
 interface ResponsibleGamingBannerProps {
   onClose?: () => void;
 }
 
 const ResponsibleGamingBanner: React.FC<ResponsibleGamingBannerProps> = ({ onClose }) => {
-  const showBanner = false;
+  const showBanner = useFlag('market.showResponsibleGamingBanner', false);
+  const bannerMessage = useFlag('market.responsibleGamingMessage', 'We are committed to promoting safe and responsible gaming practices.');
+  const bannerLink = useFlag('market.responsibleGamingLinkUrl', 'https://www.begambleaware.org/');
 
   if (!showBanner) return null;
 
@@ -21,8 +23,8 @@ const ResponsibleGamingBanner: React.FC<ResponsibleGamingBannerProps> = ({ onClo
         <div className="flex items-center space-x-3">
           <Shield className="h-5 w-5" />
           <p className="font-medium text-sm">
-            <span className="font-semibold">Responsible Gaming:</span> We are committed to promoting safe and responsible gaming practices.
-            <a href="#" className="underline ml-1 hover:no-underline">
+            <span className="font-semibold">Responsible Gaming:</span> {bannerMessage}
+            <a href={bannerLink} className="underline ml-1 hover:no-underline" target="_blank" rel="noreferrer">
               Learn more
             </a>
           </p>

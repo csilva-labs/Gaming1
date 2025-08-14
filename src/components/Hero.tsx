@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import heroImage from '@/assets/hero-gaming.jpg';
-import { getVIPStatus } from '@/lib/shared-context';
+import { useFlag } from '@/contexts/LaunchDarklyContext';
+import { trackEvent } from '@/lib/launchdarkly';
 
 interface HeroSlide {
   id: string;
@@ -14,20 +15,24 @@ interface HeroSlide {
 
 const Hero: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isVIP, setIsVIP] = useState(false);
 
-  // Check VIP status on component mount and when it changes
+  // VIP detection via LaunchDarkly flag
+  const vipVariant = useFlag('vip-gaming-experience', 'none');
+  const isVIP = vipVariant === 'vip';
+
+  // AB test variant
+  const uiVariant = useFlag('ui.variant', 'control');
+
+  // Optional string overrides from LaunchDarkly
+  const heroTitleOverride = useFlag('copy.heroTitle', '');
+  const heroSubtitleOverride = useFlag('copy.heroSubtitle', '');
+  const heroPrimaryCtaOverride = useFlag('copy.heroPrimaryCta', '');
+
+  // Fire an exposure event once when the variant is determined
   useEffect(() => {
-    const checkVIPStatus = () => {
-      const vipStatus = getVIPStatus();
-      setIsVIP(vipStatus === 'vip');
-    };
-
-    checkVIPStatus();
-    // Check every second to catch VIP status changes
-    const interval = setInterval(checkVIPStatus, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    trackEvent('hero_exposure', { variant: uiVariant, vip: isVIP });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiVariant]);
 
   // Regular hero content
   const regularSlides: HeroSlide[] = [
@@ -84,6 +89,9 @@ const Hero: React.FC = () => {
   };
 
   const handleCTAClick = () => {
+    // Send click event with A/B variant
+    trackEvent('hero_cta_click', { variant: uiVariant, vip: isVIP });
+
     if (isVIP) {
       console.log('VIP CTA clicked');
     } else {
@@ -98,6 +106,14 @@ const Hero: React.FC = () => {
   }, [slides.length]);
 
   const currentSlideData = slides[currentSlide];
+  const displayTitle = heroTitleOverride || currentSlideData.title;
+  const displaySubtitle = heroSubtitleOverride || currentSlideData.subtitle;
+  const displayPrimaryCta = heroPrimaryCtaOverride || (isVIP ? 'Explore VIP Features' : 'Learn more');
+
+  // Variant-based CTA styling (A/B test)
+  const ctaClassName = `bg-gaming-gold hover:bg-gaming-gold/90 text-primary-foreground font-semibold px-8 py-4 text-lg ${
+    uiVariant === 'bold' ? 'text-xl py-5 shadow-lg' : ''
+  }`;
 
   return (
     <section 
@@ -121,11 +137,11 @@ const Hero: React.FC = () => {
               <div className="flex items-center gap-3">
                 {isVIP && <div className="text-3xl">👑</div>}
                 <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
-                  {currentSlideData.title}
+                  {displayTitle}
                 </h1>
               </div>
               <h2 className="text-2xl md:text-4xl font-semibold text-gaming-gold">
-                {currentSlideData.subtitle}
+                {displaySubtitle}
               </h2>
             </div>
             
@@ -137,9 +153,9 @@ const Hero: React.FC = () => {
               <Button 
                 onClick={handleCTAClick}
                 size="lg"
-                className="bg-gaming-gold hover:bg-gaming-gold/90 text-primary-foreground font-semibold px-8 py-4 text-lg"
+                className={ctaClassName}
               >
-                {isVIP ? 'Explore VIP Features' : 'Learn more'}
+                {displayPrimaryCta}
               </Button>
               {isVIP && (
                 <Button 
