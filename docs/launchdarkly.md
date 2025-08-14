@@ -2,6 +2,61 @@
 
 This document explains how to configure and use LaunchDarkly feature flags in the Gaming1 demo application.
 
+## Quick Setup (based on LaunchDarkly SDK docs)
+
+1. Add your client-side key
+   - Create `.env.local` and set:
+     ```bash
+     VITE_LAUNCHDARKLY_CLIENT_SIDE_ID=your-client-side-id
+     ```
+   - The app reads this from `import.meta.env.VITE_LAUNCHDARKLY_CLIENT_SIDE_ID`.
+
+2. Initialize the React SDK (already wired)
+   - The app initializes LaunchDarkly in `src/lib/launchdarkly.ts` and `src/contexts/LaunchDarklyContext.tsx`.
+   - Initialization uses:
+     - `evaluationReasons: true`
+     - `application: { id: 'gaming1-demo', version: '1.0.0' }`
+   - It passes the user context which includes `country` and `custom.vipStatus`.
+
+3. Define flags in code (keys + defaults)
+   - Add keys to `src/types/flags.ts` under `GameFlags` and `DEFAULT_FLAGS`.
+   - Use flags via `useFlag('<flag-key>', <defaultValue>)`.
+
+4. Create flags in LaunchDarkly (Dashboard)
+   - Create client-side flags matching the keys you added in step 3.
+   - Example keys used in this app:
+     - `vip-gaming-experience` (string: `vip` | `none`)
+     - `ui.variant` (string: `control` | `bold`)
+     - `copy.heroTitle` (string)
+     - `copy.heroSubtitle` (string)
+     - `copy.heroPrimaryCta` (string)
+     - `market.showResponsibleGamingBanner` (boolean)
+     - `market.responsibleGamingMessage` (string)
+     - `market.responsibleGamingLinkUrl` (string)
+
+5. Targeting rules (examples)
+   - Country (UK vs Belgium):
+     - Attribute: `country` equals `GB` or `BE`
+     - Example: If `country` is `BE`, set `market.responsibleGamingLinkUrl` to `https://www.gamingcommission.be/`.
+   - VIP vs Regular:
+     - Attribute: `custom.vipStatus` equals `vip` (else `none`)
+     - Example: If VIP, set `vip-gaming-experience` to `vip`; else `none`.
+
+6. Track events (exposures, clicks)
+   - Use `trackEvent('event_key', { ...data }, metricValue?)` from `src/lib/launchdarkly.ts`.
+   - Examples wired in this app:
+     - `Hero` exposure: `trackEvent('hero_exposure', { variant, vip })`
+     - `Hero` CTA click: `trackEvent('hero_cta_click', { variant, vip })`
+     - `SlotMachine` gameplay events: `session_started`, `spin_clicked`, `round_completed`, `win`, `daily_bonus_claimed`
+
+7. Update user attributes
+   - Country: switch between UK and Belgium in the header selector. Internally calls `setUserCountry('GB'|'BE')`.
+   - VIP: toggle via "VIP Sign Up" / "Log Out" buttons. Updates `custom.vipStatus`.
+
+> Full React SDK reference: https://docs.launchdarkly.com/sdk/client-side/react
+
+---
+
 ## Overview
 
 This demo showcases how Gaming1 could use LaunchDarkly to run A/B tests, gradual rollouts, and targeted feature releases. All flags are currently using mock implementations for demonstration purposes.
@@ -281,8 +336,7 @@ For production deployment:
 
 1. **Environment Variables**:
    ```bash
-   NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID=your_client_side_id
-   LAUNCHDARKLY_SDK_KEY=your_server_sdk_key
+   VITE_LAUNCHDARKLY_CLIENT_SIDE_ID=your_client_side_id
    ```
 
 2. **User Context**:
@@ -293,8 +347,7 @@ For production deployment:
      email: userEmail,
      country: userCountry,
      custom: {
-       segment: 'premium',
-       device: 'mobile'
+       vipStatus: 'vip' | 'none'
      }
    };
    ```
@@ -306,8 +359,8 @@ For production deployment:
 ### Manual Testing
 
 1. **Local Development**: Flags randomize on page refresh for demo purposes
-2. **Flag Override**: Modify `flagDefaults` in `src/lib/launchdarkly.ts`
-3. **User Attributes**: Test targeting by modifying user object in LaunchDarkly context
+2. **Flag Override**: Modify `DEFAULT_FLAGS` in `src/types/flags.ts`
+3. **User Attributes**: Test targeting by modifying user object in `src/lib/shared-context.ts`
 
 ### Automated Testing
 
@@ -320,16 +373,13 @@ import { LaunchDarklyProvider } from '@/contexts/LaunchDarklyContext';
 import Hero from '@/components/Hero';
 
 test('shows variant B messaging', () => {
-  const mockUser = { key: 'test-user' };
-  
   render(
-    <LaunchDarklyProvider user={mockUser}>
+    <LaunchDarklyProvider>
       <Hero />
     </LaunchDarklyProvider>
   );
-  
-  // Assert variant B content appears
-  expect(screen.getByTestId('hero-section')).toHaveAttribute('data-variant', 'B');
+  // Assert based on flag-controlled content
+  expect(screen.getByTestId('hero-section')).toBeInTheDocument();
 });
 ```
 
@@ -357,10 +407,7 @@ Enable debug logging:
 
 ```typescript
 // In development
-if (process.env.NODE_ENV === 'development') {
-  console.log('Current flags:', flags);
-  console.log('User context:', user);
-}
+localStorage.setItem('ld-debug', 'true');
 ```
 
 ## Additional Resources

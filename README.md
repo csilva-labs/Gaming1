@@ -34,15 +34,17 @@ npm run dev
 # Open http://localhost:8080
 ```
 
-### Environment Variables (Optional)
+### Environment Variables
 
-For real LaunchDarkly integration, create a `.env.local` file:
+Create a `.env.local` file:
 
 ```bash
-NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID=your_client_side_id
+VITE_LAUNCHDARKLY_CLIENT_SIDE_ID=your_client_side_id
+VITE_WEBSITE_DOMAIN=localhost:5173
+VITE_GAMING_DOMAIN=localhost:5174
 ```
 
-**Note**: The demo works with mock data by default, so environment variables are optional for demonstration purposes.
+See `docs/launchdarkly.md` for full setup and flag creation steps. The app falls back to a mock client if the key is not set.
 
 ## 🎮 Feature Flags & Experiments
 
